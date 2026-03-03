@@ -306,10 +306,10 @@ export default function AdminDashboard() {
   };
 
   const handleReorderCategory = async (
-    index: number,
+    catId: string,
     direction: "up" | "down",
   ) => {
-    const currentIndex = categories.findIndex((c) => c.index === index);
+    const currentIndex = categories.findIndex((c) => c.id === catId);
     if (currentIndex === -1) return;
 
     const targetIndex =
@@ -319,14 +319,18 @@ export default function AdminDashboard() {
     const currentCat = categories[currentIndex];
     const targetCat = categories[targetIndex];
 
+    // Use position in array as fallback for index in Firestore
+    const currentIdx = currentCat.index ?? currentIndex;
+    const targetIdx = targetCat.index ?? targetIndex;
+
     try {
       const batch = writeBatch(db);
       const currentRef = doc(db, "categories", currentCat.id);
       const targetRef = doc(db, "categories", targetCat.id);
 
       // Swap indices
-      batch.update(currentRef, { index: targetCat.index });
-      batch.update(targetRef, { index: currentCat.index });
+      batch.update(currentRef, { index: targetIdx });
+      batch.update(targetRef, { index: currentIdx });
 
       await batch.commit();
     } catch (error) {
@@ -679,7 +683,7 @@ export default function AdminDashboard() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleReorderCategory(cat.index || 0, "up");
+                            handleReorderCategory(cat.id, "up");
                           }}
                           disabled={categories.indexOf(cat) === 0}
                           className={cn(
@@ -693,7 +697,7 @@ export default function AdminDashboard() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleReorderCategory(cat.index || 0, "down");
+                            handleReorderCategory(cat.id, "down");
                           }}
                           disabled={
                             categories.indexOf(cat) === categories.length - 1
