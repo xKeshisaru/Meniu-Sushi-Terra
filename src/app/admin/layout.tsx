@@ -15,17 +15,21 @@ export default function AdminLayout({
   const router = useRouter();
   const pathname = usePathname();
 
+  // Force dark mode for the entire admin section
+  useEffect(() => {
+    document.documentElement.classList.add("dark");
+    return () => {
+      // Only remove if we're leaving admin entirely
+    };
+  }, []);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      // If user is NOT logged in and trying to access admin pages (except login)
       if (!user && pathname !== "/admin/login") {
         router.push("/admin/login");
-      }
-      // If user IS logged in and tries to access login page
-      else if (user && pathname === "/admin/login") {
+      } else if (user && pathname === "/admin/login") {
         router.push("/admin/dashboard");
       }
-
       setLoading(false);
     });
 
@@ -34,7 +38,7 @@ export default function AdminLayout({
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-black">
+      <div className="min-h-screen flex items-center justify-center bg-black">
         <Loader2 className="w-8 h-8 animate-spin text-red-500" />
       </div>
     );
