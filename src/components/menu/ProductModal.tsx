@@ -47,9 +47,9 @@ export function ProductModal({ product, onClose }: ProductModalProps) {
             exit={{ opacity: 0, y: 100, scale: 0.95 }}
             className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none"
           >
-            <div className="bg-white dark:bg-zinc-900 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden pointer-events-auto flex flex-col max-h-[90vh]">
+            <div className="bg-zinc-900 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden pointer-events-auto flex flex-col max-h-[90vh]">
               {/* Image Header */}
-              <div className="relative h-48 sm:h-64 md:h-80 w-full flex-shrink-0 bg-zinc-100 dark:bg-black/40">
+              <div className="relative h-48 sm:h-64 md:h-80 w-full flex-shrink-0 bg-black/40">
                 <Image
                   src={imagePath}
                   alt={product.name}
@@ -70,7 +70,7 @@ export function ProductModal({ product, onClose }: ProductModalProps) {
               <div className="p-6 overflow-y-auto">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h2 className="text-2xl font-serif font-bold text-zinc-900 dark:text-zinc-50 mb-1">
+                    <h2 className="text-2xl font-serif font-bold text-zinc-50 mb-1">
                       {product.name}
                     </h2>
                     <span className="text-red-500 font-bold text-xl">
@@ -86,8 +86,8 @@ export function ProductModal({ product, onClose }: ProductModalProps) {
                     className={cn(
                       "p-3 rounded-full transition-colors",
                       mounted && isFavorited
-                        ? "bg-red-50 text-red-500 dark:bg-red-500/20 dark:text-red-400"
-                        : "bg-zinc-100 text-zinc-400 dark:bg-zinc-800",
+                        ? "bg-red-500/20 text-red-400"
+                        : "bg-zinc-800 text-zinc-400",
                     )}
                   >
                     <Heart
@@ -99,27 +99,44 @@ export function ProductModal({ product, onClose }: ProductModalProps) {
                   </motion.button>
                 </div>
 
-                <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed mb-6">
+                <p className="text-zinc-300 leading-relaxed mb-6">
                   {product.desc}
                 </p>
 
-                {/* Additional Details Placeholder (Allergens, etc.) */}
-                <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-xl p-4 text-sm text-zinc-500 dark:text-zinc-400">
-                  <p className="flex items-center gap-2 mb-2">
-                    <span className="font-semibold text-zinc-900 dark:text-zinc-200">
-                      Gramaj:
-                    </span>
-                    {product.weight || weight || "Conform descriere"}
-                  </p>
-                  {/* Add more details here if available in data */}
+                {/* Details block */}
+                <div className="bg-zinc-800/50 rounded-xl p-4 text-sm text-zinc-400 space-y-3">
+                  {/* Gramaj */}
+                  {(product.weight || weight) && (
+                    <p className="flex items-center gap-2">
+                      <span className="font-semibold text-zinc-200 min-w-[70px]">
+                        Gramaj:
+                      </span>
+                      {product.weight || weight}
+                    </p>
+                  )}
+
+                  {/* Valori Nutriționale */}
+                  {product.nutrition && (
+                    <>
+                      <div className="border-t border-white/10" />
+                      <div>
+                        <p className="font-semibold text-zinc-200 mb-1">
+                          Valori nutriționale:
+                        </p>
+                        <p className="leading-relaxed whitespace-pre-line">
+                          {product.nutrition}
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
               {/* Footer Actions */}
-              <div className="p-4 border-t border-zinc-100 dark:border-white/5 bg-zinc-50/50 dark:bg-zinc-900/50 mt-auto">
+              <div className="p-4 border-t border-white/5 bg-zinc-900/50 mt-auto">
                 <button
                   onClick={onClose}
-                  className="w-full py-3.5 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-black font-bold text-center active:scale-[0.98] transition-transform"
+                  className="w-full py-3.5 rounded-xl bg-white text-black font-bold text-center active:scale-[0.98] transition-transform"
                 >
                   Închide
                 </button>

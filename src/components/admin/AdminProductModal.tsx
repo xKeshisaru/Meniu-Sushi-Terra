@@ -56,6 +56,7 @@ export function AdminProductModal({
     desc: "",
     price: "",
     weight: "",
+    nutrition: "",
     image: "",
     active: true,
     isHeader: false,
@@ -83,16 +84,15 @@ export function AdminProductModal({
         setFormData({
           name: product.name,
           desc: product.desc,
-          // We leave desc as is here. We clean it on save if we extracted weight.
-
           price: product.price.replace(/\s*lei\s*/i, "").trim(),
           weight: rawWeight,
+          nutrition: product.nutrition ?? "",
           image: product.image,
           active: product.active ?? true,
           isHeader: product.isHeader ?? false,
           isSubHeader: product.isSubHeader ?? false,
           index: product.index ?? 0,
-          categoryId: categoryId, // Initial category
+          categoryId: categoryId,
         });
       } else {
         // New Product Default State
@@ -101,11 +101,12 @@ export function AdminProductModal({
           desc: "",
           price: "",
           weight: "",
+          nutrition: "",
           image: "",
           active: true,
           isHeader: false,
           isSubHeader: false,
-          index: Date.now(), // High index for new items to put them at the end
+          index: Date.now(),
           categoryId: categoryId,
         });
       }
@@ -201,7 +202,6 @@ export function AdminProductModal({
 
       const productData = {
         name: formData.name,
-        // Remove weight pattern from description if we are saving
         desc: formData.desc
           .replace(
             /(?:\(|^|\s)(\d+(?:\.\d+)?)\s*(g|gr|ml|l|kg|buc)(?:\)|$|\s)/gi,
@@ -211,6 +211,7 @@ export function AdminProductModal({
           .replace(/\s+/, " "),
         price: formData.price,
         weight: formData.weight,
+        nutrition: formData.nutrition || "",
         image: formData.image,
         active: formData.active,
         isHeader: formData.isHeader || false,
@@ -514,6 +515,24 @@ export function AdminProductModal({
                       rows={2}
                       value={formData.desc}
                       onChange={handleChange}
+                      className="w-full px-4 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+                    />
+                  </div>
+
+                  <div className="md:col-span-12 space-y-1">
+                    <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300">
+                      Valori nutriționale (opțional)
+                    </label>
+                    <p className="text-xs text-zinc-500 mb-1">
+                      Format liber, ex: Calorii: 320 kcal · Proteine: 18g ·
+                      Alergeni: GLUTEN, OUĂ
+                    </p>
+                    <textarea
+                      name="nutrition"
+                      rows={3}
+                      value={formData.nutrition}
+                      onChange={handleChange}
+                      placeholder="Valoare energetică: 206 Kcal / 859 Kj, Grăsimi: 4,62g..."
                       className="w-full px-4 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
                     />
                   </div>

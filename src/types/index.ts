@@ -3,11 +3,12 @@ export interface Product {
   name: string;
   desc: string;
   price: string;
-  weight: string; // New field for gramaj
+  weight: string;
   image: string;
   active?: boolean;
   featured?: boolean;
   likes?: number;
+  nutrition?: string;
   isHeader?: boolean;
   isSubHeader?: boolean;
   index?: number;
