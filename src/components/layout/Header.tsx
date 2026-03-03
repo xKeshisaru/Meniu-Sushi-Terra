@@ -1,12 +1,12 @@
 import { useRef, useEffect, useState } from "react";
 import Image from "next/image";
-import { Share2, Moon, Sun, Heart } from "lucide-react";
+import { Share2, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
 
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
-  // Theme logic would go here (requires a ThemeProvider, skipping for now)
+  const [shareFeedback, setShareFeedback] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -18,6 +18,30 @@ export function Header() {
 
   const { favorites, toggleFavoritesDrawer } = useStore();
   const favoritesCount = favorites.length;
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    const title = "Meniu Sushi Terra";
+    const text = "Vezi meniul nostru digital 🍱";
+
+    if (navigator.share) {
+      // Native share sheet on mobile
+      try {
+        await navigator.share({ title, text, url });
+      } catch (_) {
+        // User dismissed - do nothing
+      }
+    } else {
+      // Desktop fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(url);
+        setShareFeedback(true);
+        setTimeout(() => setShareFeedback(false), 2000);
+      } catch (_) {
+        // Clipboard not available either
+      }
+    }
+  };
 
   return (
     <header
@@ -51,8 +75,19 @@ export function Header() {
               <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500 animate-pulse" />
             )}
           </button>
-          <button className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-            <Share2 className="w-5 h-5 text-zinc-700 dark:text-zinc-200" />
+          <button
+            onClick={handleShare}
+            className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors relative"
+            title={shareFeedback ? "Link copiat!" : "Distribuie meniul"}
+          >
+            <Share2
+              className={cn(
+                "w-5 h-5 transition-colors",
+                shareFeedback
+                  ? "text-green-500"
+                  : "text-zinc-700 dark:text-zinc-200",
+              )}
+            />
           </button>
         </div>
       </div>

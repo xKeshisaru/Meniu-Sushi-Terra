@@ -2,7 +2,7 @@
 
 import { useStore } from "@/lib/store";
 import { menuData } from "@/lib/data";
-import { X, Trash2, ExternalLink } from "lucide-react";
+import { X, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useEffect, useState, useMemo } from "react";
@@ -123,15 +123,11 @@ export function FavoritesDrawer() {
 
             {/* Footer */}
             {favoriteProducts.length > 0 && (
-              <div className="p-4 border-t border-zinc-100 dark:border-white/10 bg-zinc-50 dark:bg-zinc-900/50 space-y-3">
+              <div className="p-4 border-t border-zinc-100 dark:border-white/10 bg-zinc-50 dark:bg-zinc-900/50">
                 <div className="flex justify-between items-center text-zinc-900 dark:text-zinc-50 font-bold text-lg">
                   <span>Total estimat:</span>
                   <span>{totalPrice} lei</span>
                 </div>
-                <button className="w-full py-3.5 rounded-xl bg-red-500 text-white font-bold text-center active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
-                  Arată Chelnerului
-                  <ExternalLink className="w-4 h-4" />
-                </button>
               </div>
             )}
           </motion.div>
