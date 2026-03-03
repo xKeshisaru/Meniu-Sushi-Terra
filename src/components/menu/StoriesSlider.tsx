@@ -6,9 +6,12 @@ interface StoriesProps {
 }
 
 export function StoriesSlider({ items }: StoriesProps) {
+  if (!items || items.length === 0) return null;
+
   return (
     <section className="py-6 overflow-x-auto no-scrollbar snap-x px-4 flex gap-4">
       {items.map((item, i) => {
+        if (!item.image) return null;
         const imagePath = item.image.startsWith("http")
           ? item.image
           : `/${item.image.split("?")[0]}`;

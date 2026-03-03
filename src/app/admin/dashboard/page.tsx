@@ -316,7 +316,7 @@ export default function AdminDashboard() {
           const q = query(collection(db, "categories", cat.id, "products"));
           const unsubProd = onSnapshot(q, (prodSnap) => {
             const products = prodSnap.docs.map(
-              (doc) => ({ ...doc.data() }) as AdminProduct,
+              (doc) => ({ ...doc.data(), id: doc.id }) as AdminProduct,
             );
 
             setCategories((prev) => {
