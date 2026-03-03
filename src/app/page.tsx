@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { menuData as staticMenuData, featuredItems } from "@/lib/data";
+import { menuData as staticMenuData } from "@/lib/data";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { StoriesSlider } from "@/components/menu/StoriesSlider";
@@ -68,12 +68,12 @@ export default function Home() {
     return () => unsubCats();
   }, []);
 
-  // Derive featured products
+  // Derive featured products from live Firestore data
   const featuredProducts = useMemo(() => {
     const allProducts = menuData.flatMap((cat) => cat.items);
-    return featuredItems
-      .map((name) => allProducts.find((p) => p.name === name))
-      .filter((p): p is Product => !!p);
+    return allProducts.filter(
+      (p) => (p as Product & { featured?: boolean }).featured === true,
+    );
   }, [menuData]);
 
   // Scroll Spy Logic

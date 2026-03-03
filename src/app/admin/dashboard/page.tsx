@@ -32,6 +32,7 @@ import {
   Check,
   X,
   GripVertical,
+  Star,
 } from "lucide-react";
 import {
   DndContext,
@@ -390,6 +391,22 @@ export default function AdminDashboard() {
       await deleteDoc(doc(db, "categories", catId, "products", prodId));
     } catch (e) {
       alert("Eroare la ștergere");
+    }
+  };
+
+  const toggleFeatured = async (
+    catId: string,
+    prodId: string,
+    currentFeatured: boolean,
+  ) => {
+    try {
+      const { updateDoc } = await import("firebase/firestore");
+      await updateDoc(doc(db, "categories", catId, "products", prodId), {
+        featured: !currentFeatured,
+      });
+    } catch (e) {
+      console.error("Error toggling featured:", e);
+      alert("Eroare la actualizare");
     }
   };
 
@@ -1255,6 +1272,39 @@ export default function AdminDashboard() {
                             </span>
 
                             <div className="flex gap-2 relative">
+                              <button
+                                onClick={() => {
+                                  const catId =
+                                    activeTab === "all"
+                                      ? categories.find((c) =>
+                                          c.items.some((p) => p.id === item.id),
+                                        )?.id || ""
+                                      : activeTab;
+                                  toggleFeatured(
+                                    catId,
+                                    item.id,
+                                    !!item.featured,
+                                  );
+                                }}
+                                className={cn(
+                                  "p-2 rounded-lg transition-colors border",
+                                  item.featured
+                                    ? "bg-yellow-50 dark:bg-yellow-900/30 text-yellow-500 border-yellow-200 dark:border-yellow-700"
+                                    : "bg-zinc-50 dark:bg-zinc-800 hover:bg-yellow-50 dark:hover:bg-yellow-900/30 text-zinc-400 hover:text-yellow-500 border-zinc-100 dark:border-zinc-700 hover:border-yellow-200",
+                                )}
+                                title={
+                                  item.featured
+                                    ? "Elimină din Recomandate"
+                                    : "Adaugă la Recomandate"
+                                }
+                              >
+                                <Star
+                                  className={cn(
+                                    "w-4 h-4",
+                                    item.featured && "fill-yellow-400",
+                                  )}
+                                />
+                              </button>
                               <button
                                 onClick={() =>
                                   setMovingProductId(
