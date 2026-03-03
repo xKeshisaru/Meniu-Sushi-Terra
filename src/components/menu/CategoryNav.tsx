@@ -1,5 +1,5 @@
 import { Category } from "@/types";
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import * as Icons from "lucide-react";
 
@@ -15,6 +15,21 @@ export function CategoryNav({
   onSelect,
 }: CategoryNavProps) {
   const scrollRef = useRef<HTMLUListElement>(null);
+
+  // Auto-scroll the active tab into center view whenever it changes
+  useEffect(() => {
+    if (!scrollRef.current || !activeId) return;
+    const activeBtn = scrollRef.current.querySelector<HTMLElement>(
+      `[data-cat-id="${activeId}"]`,
+    );
+    if (activeBtn) {
+      activeBtn.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "center",
+      });
+    }
+  }, [activeId]);
 
   return (
     <nav className="sticky top-[60px] z-40 bg-black/80 backdrop-blur-md border-b border-white/5 py-2">
@@ -37,6 +52,7 @@ export function CategoryNav({
           return (
             <li key={cat.id} className="snap-start">
               <button
+                data-cat-id={cat.id}
                 onClick={() => {
                   onSelect(cat.id);
                   document
