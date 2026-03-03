@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { signOut } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
@@ -31,9 +31,25 @@ import {
   ArrowRightLeft,
   Check,
   X,
-  ChevronUp,
-  ChevronDown,
+  GripVertical,
 } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import Image from "next/image";
 import { Product, Category } from "@/types";
 import { AdminProductModal } from "@/components/admin/AdminProductModal";
@@ -50,6 +66,107 @@ interface AdminProduct extends Product {
   id: string; // Firestore ID
   active?: boolean;
 }
+
+// Sortable Category Item Component
+const SortableCategoryItem = ({
+  cat,
+  activeTab,
+  setActiveTab,
+  openCategoryEdit,
+  deleteCategory,
+}: {
+  cat: AdminCategory;
+  activeTab: string;
+  setActiveTab: (id: string) => void;
+  openCategoryEdit: (cat: Category, e: React.MouseEvent) => void;
+  deleteCategory: (id: string) => void;
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: cat.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : undefined,
+  };
+
+  const IconComponent = categoryIcons[cat.icon] || HelpCircle;
+
+  return (
+    <div ref={setNodeRef} style={style} className="relative group">
+      <button
+        onClick={() => setActiveTab(cat.id)}
+        className={cn(
+          "w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-xl transition-all border border-transparent",
+          activeTab === cat.id
+            ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-lg"
+            : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:border-zinc-200 dark:hover:border-zinc-700",
+        )}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          {/* Drag Handle */}
+          <span
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing touch-none flex-shrink-0 opacity-30 group-hover:opacity-70 hover:!opacity-100 transition-opacity"
+            title="Trage pentru a reordona"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GripVertical className="w-4 h-4" />
+          </span>
+          <span className="text-xl opacity-80">
+            <IconComponent className="w-5 h-5" />
+          </span>
+          <span className="truncate max-w-[100px]" title={cat.title}>
+            {cat.title}
+          </span>
+        </div>
+        {cat.items.length > 0 && (
+          <span
+            className={cn(
+              "text-xs px-2 py-0.5 rounded-full font-bold flex-shrink-0",
+              activeTab === cat.id
+                ? "bg-white/20 text-white"
+                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400",
+            )}
+          >
+            {cat.items.length}
+          </span>
+        )}
+      </button>
+
+      {/* Category Actions - Visible on hover */}
+      <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm rounded-lg p-0.5 shadow-sm">
+        <button
+          onClick={(e) => openCategoryEdit(cat, e)}
+          className={cn(
+            "p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-500 hover:text-blue-500 transition-colors",
+          )}
+          title="Editează Categoria"
+        >
+          <Settings className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            deleteCategory(cat.id);
+          }}
+          className="p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-500 hover:text-red-500 transition-colors"
+          title="Șterge Categoria"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const MoveDropdown = ({
   item,
@@ -112,6 +229,41 @@ export default function AdminDashboard() {
 
   const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const handleDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      const oldIndex = categories.findIndex((c) => c.id === active.id);
+      const newIndex = categories.findIndex((c) => c.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return;
+
+      // Optimistic update
+      const reordered = arrayMove(categories, oldIndex, newIndex);
+      setCategories(reordered);
+
+      // Persist to Firestore: assign sequential indices
+      try {
+        const batch = writeBatch(db);
+        reordered.forEach((cat, i) => {
+          batch.update(doc(db, "categories", cat.id), { index: i });
+        });
+        await batch.commit();
+      } catch (error) {
+        console.error("Error saving category order:", error);
+      }
+    },
+    [categories],
+  );
 
   // UI State
   const [activeTab, setActiveTab] = useState<string>("");
@@ -639,110 +791,29 @@ export default function AdminDashboard() {
           {/* Sidebar Categories */}
           <aside className="w-full lg:w-72 flex-shrink-0">
             <div className="bg-white dark:bg-zinc-900/50 backdrop-blur-sm rounded-2xl shadow-sm border border-zinc-100 dark:border-zinc-800 p-2 lg:sticky lg:top-24 max-h-[calc(100vh-8rem)] overflow-y-auto custom-scrollbar flex flex-col">
-              <nav className="space-y-1 flex-1">
-                {categories.map((cat) => {
-                  const IconComponent = categoryIcons[cat.icon] || HelpCircle;
-                  return (
-                    <div key={cat.id} className="relative group">
-                      <button
-                        onClick={() => setActiveTab(cat.id)}
-                        className={cn(
-                          "w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-xl transition-all border border-transparent pr-20", // Added pr-20 for menu space
-                          activeTab === cat.id
-                            ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-lg"
-                            : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:border-zinc-200 dark:hover:border-zinc-700",
-                        )}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="text-xl opacity-80 group-hover:scale-110 transition-transform">
-                            <IconComponent className="w-5 h-5" />
-                          </span>
-                          <span
-                            className="truncate max-w-[120px]"
-                            title={cat.title}
-                          >
-                            {cat.title}
-                          </span>
-                        </div>
-                        {cat.items.length > 0 && (
-                          <span
-                            className={cn(
-                              "text-xs px-2 py-0.5 rounded-full font-bold",
-                              activeTab === cat.id
-                                ? "bg-white/20 text-white"
-                                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 group-hover:bg-white dark:group-hover:bg-zinc-700",
-                            )}
-                          >
-                            {cat.items.length}
-                          </span>
-                        )}
-                      </button>
-
-                      {/* Category Actions - Visible on hover/active */}
-                      <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5 bg-white/20 dark:bg-black/20 backdrop-blur-sm rounded-lg p-0.5">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleReorderCategory(cat.id, "up");
-                          }}
-                          disabled={categories.indexOf(cat) === 0}
-                          className={cn(
-                            "p-1 rounded-md hover:bg-white/50 text-zinc-500 hover:text-blue-500 disabled:opacity-20",
-                            activeTab === cat.id ? "text-white/80" : "",
-                          )}
-                          title="Mută Sus"
-                        >
-                          <ChevronUp className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleReorderCategory(cat.id, "down");
-                          }}
-                          disabled={
-                            categories.indexOf(cat) === categories.length - 1
-                          }
-                          className={cn(
-                            "p-1 rounded-md hover:bg-white/50 text-zinc-500 hover:text-blue-500 disabled:opacity-20",
-                            activeTab === cat.id ? "text-white/80" : "",
-                          )}
-                          title="Mută Jos"
-                        >
-                          <ChevronDown className="w-3.5 h-3.5" />
-                        </button>
-                        <div className="w-px h-3 bg-zinc-400/20 mx-0.5" />
-                        <button
-                          onClick={(e) => openCategoryEdit(cat, e)}
-                          className={cn(
-                            "p-1 rounded-md hover:bg-white/50 text-zinc-500 hover:text-blue-500",
-                            activeTab === cat.id
-                              ? "text-white/80 hover:text-white"
-                              : "",
-                          )}
-                          title="Editează Categoria"
-                        >
-                          <Settings className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteCategory(cat.id);
-                          }}
-                          className={cn(
-                            "p-1 rounded-md hover:bg-white/50 text-zinc-500 hover:text-red-500",
-                            activeTab === cat.id
-                              ? "text-white/80 hover:text-red-200"
-                              : "",
-                          )}
-                          title="Șterge Categoria"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </nav>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={categories.map((c) => c.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <nav className="space-y-1 flex-1">
+                    {categories.map((cat) => (
+                      <SortableCategoryItem
+                        key={cat.id}
+                        cat={cat}
+                        activeTab={activeTab}
+                        setActiveTab={setActiveTab}
+                        openCategoryEdit={openCategoryEdit}
+                        deleteCategory={deleteCategory}
+                      />
+                    ))}
+                  </nav>
+                </SortableContext>
+              </DndContext>
 
               <div className="pt-2 mt-2 border-t border-zinc-100 dark:border-zinc-800">
                 <button
