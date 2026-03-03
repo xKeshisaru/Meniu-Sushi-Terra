@@ -31,22 +31,22 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen grid place-items-center p-4 bg-zinc-50 dark:bg-black">
+    <div className="min-h-screen grid place-items-center p-4 bg-black">
       <div className="w-full max-w-sm space-y-4">
-        <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-xl border border-zinc-100 dark:border-zinc-800">
+        <div className="bg-zinc-900 p-6 rounded-2xl shadow-xl border border-zinc-800">
           <div className="flex justify-center mb-6">
-            <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-full text-red-600 dark:text-red-500">
+            <div className="p-3 bg-red-900/30 rounded-full text-red-500">
               <Lock className="w-6 h-6" />
             </div>
           </div>
 
-          <h1 className="text-2xl font-serif font-bold text-center mb-6 text-zinc-900 dark:text-zinc-50">
+          <h1 className="text-2xl font-serif font-bold text-center mb-6 text-zinc-50">
             Acces Admin
           </h1>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+              <label className="block text-sm font-medium text-zinc-300 mb-1">
                 Email
               </label>
               <input
@@ -54,13 +54,13 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full px-4 py-2 rounded-xl bg-zinc-800 border border-zinc-700 text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-red-500"
                 placeholder="iasisushiterra@gmail.com"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+              <label className="block text-sm font-medium text-zinc-300 mb-1">
                 Parolă
               </label>
               <input
@@ -68,13 +68,13 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full px-4 py-2 rounded-xl bg-zinc-800 border border-zinc-700 text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-red-500"
                 placeholder="••••••••"
               />
             </div>
 
             {error && (
-              <p className="text-red-500 text-sm text-center bg-red-50 dark:bg-red-900/20 p-2 rounded-lg">
+              <p className="text-red-400 text-sm text-center bg-red-900/20 p-2 rounded-lg">
                 {error}
               </p>
             )}
@@ -82,7 +82,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-zinc-900 dark:bg-white text-white dark:text-black font-bold rounded-xl active:scale-[0.98] transition-transform disabled:opacity-50"
+              className="w-full py-3 bg-white text-black font-bold rounded-xl active:scale-[0.98] transition-transform disabled:opacity-50"
             >
               {loading ? "Se verifică..." : "Autentificare"}
             </button>
@@ -91,7 +91,7 @@ export default function LoginPage() {
 
         <Link
           href="/"
-          className="flex items-center justify-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 hover:text-red-500 dark:hover:text-red-400 transition-colors font-medium"
+          className="flex items-center justify-center gap-2 text-sm text-zinc-400 hover:text-red-400 transition-colors font-medium"
         >
           <ArrowLeft className="w-4 h-4" />
           Înapoi la meniu
