@@ -7,6 +7,7 @@ export interface Product {
   image: string;
   active?: boolean;
   featured?: boolean;
+  likes?: number;
   isHeader?: boolean;
   isSubHeader?: boolean;
   index?: number;

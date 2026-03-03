@@ -227,6 +227,7 @@ export default function Home() {
                       key={index}
                       product={item}
                       category={category.title}
+                      categoryId={category.id}
                       onOpen={() => setSelectedProduct(item)}
                     />
                   ))}

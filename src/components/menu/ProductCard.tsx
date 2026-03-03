@@ -3,25 +3,29 @@
 import Image from "next/image";
 import { Product } from "@/types";
 import { Heart } from "lucide-react";
-import { motion } from "framer-motion";
-import { cn, extractWeight } from "@/lib/utils"; // We need to create this util
+import { motion, AnimatePresence } from "framer-motion";
+import { cn, extractWeight } from "@/lib/utils";
 import { useStore } from "@/lib/store";
 import { useEffect, useState } from "react";
 
 interface ProductCardProps {
   product: Product;
   category: string;
+  categoryId: string;
   onOpen: () => void;
 }
 
-export function ProductCard({ product, category, onOpen }: ProductCardProps) {
-  // Use a reliable fallback for images or the local asset
-  // data.js had assets/products/... -> in Next.js public/assets/products/... works as /assets/products/...
+export function ProductCard({
+  product,
+  category,
+  categoryId,
+  onOpen,
+}: ProductCardProps) {
   const imagePath = product.image.startsWith("http")
     ? product.image
     : `/${product.image.split("?")[0]}`;
 
-  const isDrink = category === "bauturi";
+  const isDrink = category === "Băuturi";
   const weight = extractWeight(product.desc);
 
   const { toggleFavorite, favorites } = useStore();
@@ -32,6 +36,7 @@ export function ProductCard({ product, category, onOpen }: ProductCardProps) {
   }, []);
 
   const isFavorited = favorites.includes(product.name);
+  const likesCount = product.likes ?? 0;
 
   return (
     <div
@@ -56,13 +61,30 @@ export function ProductCard({ product, category, onOpen }: ProductCardProps) {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
-        {/* Favorite Button Overlay */}
+        {/* Like Count Badge — bottom left */}
+        <AnimatePresence>
+          {mounted && likesCount > 0 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              className="absolute bottom-2 left-2 flex items-center gap-1 rounded-full bg-black/50 backdrop-blur-sm px-2 py-0.5 text-white"
+            >
+              <Heart className="h-3 w-3 fill-red-500 text-red-500" />
+              <span className="text-[11px] font-bold leading-none">
+                {likesCount}
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Favorite Button Overlay — top right */}
         <motion.button
           whileTap={{ scale: 0.8 }}
           whileHover={{ scale: 1.1 }}
           onClick={(e) => {
             e.stopPropagation();
-            toggleFavorite(product.name);
+            toggleFavorite(product.name, categoryId, product.id);
           }}
           className={cn(
             "absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-md transition-colors",
