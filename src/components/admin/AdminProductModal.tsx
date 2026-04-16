@@ -315,7 +315,7 @@ export function AdminProductModal({
                     : "bg-green-500 shadow-green-500/60",
               )}
             />
-            <h2 className="text-xl font-bold font-serif text-zinc-900 dark:text-zinc-50">
+            <h2 className="text-2xl font-black font-serif text-zinc-950 dark:text-zinc-50">
               {product
                 ? "Editare"
                 : formData.isHeader
@@ -323,9 +323,11 @@ export function AdminProductModal({
                   : formData.isSubHeader
                     ? "Sub-titlu Nou"
                     : "Produs Nou"}{" "}
-              {formData.isHeader || formData.isSubHeader
-                ? "Secțiune"
-                : `(${product ? "Produs" : "Nou"})`}
+              <span className="text-sm font-medium opacity-60">
+                {formData.isHeader || formData.isSubHeader
+                  ? "Secțiune"
+                  : `(${product ? "Produs" : "Nou"})`}
+              </span>
             </h2>
           </div>
           <button
@@ -342,14 +344,14 @@ export function AdminProductModal({
             <div className="flex flex-col md:flex-row gap-4">
               {/* Category Selector */}
               <div className="flex-1 space-y-1">
-                <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300">
+                <label className="block text-sm font-black text-zinc-950 dark:text-zinc-100 mb-1">
                   Categorie
                 </label>
                 <select
                   name="categoryId"
                   value={formData.categoryId}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full px-4 py-3 rounded-xl bg-white dark:bg-zinc-800 border-2 border-zinc-300 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-zinc-900 dark:text-zinc-100 font-medium transition-all"
                 >
                   {categories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
@@ -365,13 +367,13 @@ export function AdminProductModal({
                 !formData.isSubHeader &&
                 sections.length > 0 && (
                   <div className="flex-1 space-y-1 animate-in fade-in slide-in-from-left-2 duration-300">
-                    <label className="block text-sm font-bold text-red-600 dark:text-red-400">
+                    <label className="block text-sm font-black text-red-700 dark:text-red-400 mb-1">
                       Poziționează în secțiunea (Opțional)
                     </label>
                     <select
                       value={targetSectionId}
                       onChange={(e) => setTargetSectionId(e.target.value)}
-                      className="w-full px-4 py-2 rounded-xl bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium"
+                      className="w-full px-4 py-3 rounded-xl bg-red-50/50 dark:bg-red-900/10 border-2 border-red-200 dark:border-red-900/20 focus:outline-none focus:ring-2 focus:ring-red-500 font-bold text-red-900 dark:text-red-100 transition-all"
                     >
                       <option value="">Ultimul în listă</option>
                       {sections.map((s) => (
@@ -386,7 +388,7 @@ export function AdminProductModal({
               {/* Header Toggles */}
               <div className="flex-1 flex items-center justify-between p-2 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800">
                 <div className="px-2">
-                  <span className="block font-bold text-zinc-900 dark:text-zinc-100 text-sm">
+                  <span className="block font-black text-zinc-950 dark:text-zinc-100 text-sm">
                     Titlu Principal
                   </span>
                   <span className="text-[10px] text-zinc-500">
@@ -412,7 +414,7 @@ export function AdminProductModal({
 
               <div className="flex-1 flex items-center justify-between p-2 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800">
                 <div className="px-2">
-                  <span className="block font-bold text-zinc-900 dark:text-zinc-100 text-sm">
+                  <span className="block font-black text-zinc-950 dark:text-zinc-100 text-sm">
                     Sub-titlu
                   </span>
                   <span className="text-[10px] text-zinc-500">
@@ -438,7 +440,7 @@ export function AdminProductModal({
 
               <div className="flex-1 flex items-center justify-between p-2 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800">
                 <div className="px-2">
-                  <span className="block font-bold text-zinc-900 dark:text-zinc-100 text-sm">
+                  <span className="block font-black text-zinc-950 dark:text-zinc-100 text-sm">
                     Statusul Vizibilității
                   </span>
                   <span className="text-[10px] text-zinc-500">
@@ -496,7 +498,7 @@ export function AdminProductModal({
               <>
                 <div className="space-y-1 text-sm text-zinc-500 bg-zinc-50 dark:bg-zinc-800/30 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800">
                   <p>
-                    <span className="font-bold text-zinc-700 dark:text-zinc-300 mr-2">
+                    <span className="font-black text-zinc-900 dark:text-zinc-100 mr-2">
                       Sfat:
                     </span>
                     Nu este nevoie să adaugi gramajul în descriere, folosește
@@ -505,7 +507,7 @@ export function AdminProductModal({
                 </div>
 
                 <div className="space-y-3">
-                  <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300">
+                  <label className="block text-sm font-black text-zinc-950 dark:text-zinc-100">
                     Imagine Produs
                   </label>
                   <div className="flex gap-4 items-start">
@@ -558,7 +560,7 @@ export function AdminProductModal({
                           ) : (
                             <UploadCloud className="w-5 h-5 text-zinc-500" />
                           )}
-                          <span className="text-sm font-bold text-zinc-600 dark:text-zinc-400">
+                          <span className="text-sm font-black text-zinc-900 dark:text-zinc-200">
                             {uploading
                               ? "Se încarcă..."
                               : "Încarcă o poză nouă"}
@@ -566,7 +568,7 @@ export function AdminProductModal({
                         </label>
                       </div>
                       <div className="space-y-1">
-                        <p className="text-xs text-zinc-500 font-medium">
+                        <p className="text-xs text-zinc-950 dark:text-zinc-300 font-black uppercase tracking-wider">
                           SAU introdu un link direct:
                         </p>
                         <input
@@ -575,7 +577,7 @@ export function AdminProductModal({
                           value={formData.image}
                           onChange={handleChange}
                           placeholder="https://..."
-                          className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+                          className="w-full px-4 py-3 rounded-xl bg-white dark:bg-zinc-800 border-2 border-zinc-300 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm text-zinc-900 dark:text-zinc-100 font-medium transition-all"
                         />
                       </div>
                     </div>
@@ -586,7 +588,7 @@ export function AdminProductModal({
 
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
               <div className="md:col-span-12 space-y-1">
-                <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300">
+                <label className="block text-sm font-black text-zinc-950 dark:text-zinc-100 mb-1">
                   {formData.isHeader || formData.isSubHeader
                     ? "Nume Titlu / Secțiune"
                     : "Nume Produs"}
@@ -597,14 +599,14 @@ export function AdminProductModal({
                   required
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full px-4 py-3 rounded-xl bg-white dark:bg-zinc-800 border-2 border-zinc-300 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-zinc-900 dark:text-zinc-100 font-medium transition-all"
                 />
               </div>
 
               {!formData.isHeader && !formData.isSubHeader && (
                 <>
                   <div className="md:col-span-4 space-y-1">
-                    <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300">
+                    <label className="block text-sm font-black text-zinc-950 dark:text-zinc-100 mb-1">
                       Preț
                     </label>
                     <div className="relative">
@@ -614,7 +616,7 @@ export function AdminProductModal({
                         required
                         value={formData.price}
                         onChange={handleChange}
-                        className="w-full px-4 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                        className="w-full px-4 py-3 rounded-xl bg-white dark:bg-zinc-800 border-2 border-zinc-300 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-zinc-900 dark:text-zinc-100 font-medium transition-all"
                       />
                       <span className="absolute right-3 top-2 text-zinc-400 font-bold text-sm">
                         LEI
@@ -623,7 +625,7 @@ export function AdminProductModal({
                   </div>
 
                   <div className="md:col-span-8 space-y-1">
-                    <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300">
+                    <label className="block text-sm font-black text-zinc-950 dark:text-zinc-100 mb-1">
                       Gramaj / Detalii (40ml, 750ml etc.)
                     </label>
                     <input
@@ -631,12 +633,12 @@ export function AdminProductModal({
                       name="weight"
                       value={formData.weight}
                       onChange={handleChange}
-                      className="w-full px-4 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                      className="w-full px-4 py-3 rounded-xl bg-white dark:bg-zinc-800 border-2 border-zinc-300 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-zinc-900 dark:text-zinc-100 font-medium transition-all"
                     />
                   </div>
 
                   <div className="md:col-span-12 space-y-1">
-                    <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300">
+                    <label className="block text-sm font-black text-zinc-950 dark:text-zinc-100 mb-1">
                       Descriere (opțional)
                     </label>
                     <textarea
@@ -644,15 +646,15 @@ export function AdminProductModal({
                       rows={2}
                       value={formData.desc}
                       onChange={handleChange}
-                      className="w-full px-4 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+                      className="w-full px-4 py-3 rounded-xl bg-white dark:bg-zinc-800 border-2 border-zinc-300 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none text-zinc-900 dark:text-zinc-100 font-medium transition-all"
                     />
                   </div>
 
                   <div className="md:col-span-12 space-y-1">
-                    <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300">
+                    <label className="block text-sm font-black text-zinc-950 dark:text-zinc-100 mb-1">
                       Valori nutriționale (opțional)
                     </label>
-                    <p className="text-xs text-zinc-500 mb-1">
+                    <p className="text-xs text-zinc-900 dark:text-zinc-400 font-bold mb-1 opacity-80">
                       Format liber, ex: Calorii: 320 kcal · Proteine: 18g ·
                       Alergeni: GLUTEN, OUĂ
                     </p>
@@ -662,7 +664,7 @@ export function AdminProductModal({
                       value={formData.nutrition}
                       onChange={handleChange}
                       placeholder="Valoare energetică: 206 Kcal / 859 Kj, Grăsimi: 4,62g..."
-                      className="w-full px-4 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+                      className="w-full px-4 py-3 rounded-xl bg-white dark:bg-zinc-800 border-2 border-zinc-300 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none text-zinc-900 dark:text-zinc-100 font-medium transition-all"
                     />
                   </div>
                 </>
@@ -676,7 +678,7 @@ export function AdminProductModal({
           <button
             onClick={onClose}
             disabled={loading}
-            className="px-6 py-2.5 rounded-xl font-bold text-zinc-600 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-800 transition-colors"
+            className="px-6 py-2.5 rounded-xl font-black text-zinc-700 hover:bg-zinc-200 border-2 border-zinc-200 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:border-zinc-700 transition-all active:scale-95"
           >
             Anulează
           </button>
@@ -684,7 +686,7 @@ export function AdminProductModal({
             type="submit"
             form="product-form"
             disabled={loading || uploading}
-            className="px-8 py-2.5 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl shadow-lg shadow-red-500/20 transition-all flex items-center gap-2 disabled:opacity-50"
+            className="px-10 py-2.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-black rounded-xl shadow-xl shadow-red-500/30 transition-all flex items-center gap-2 disabled:opacity-50 active:scale-95"
           >
             {loading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
