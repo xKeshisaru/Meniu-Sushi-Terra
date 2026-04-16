@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
 import { CookieConsent } from "@/components/layout/CookieConsent";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const outfit = Outfit({ subsets: ["latin"] });
@@ -30,6 +31,7 @@ export default function RootLayout({
       <body className={`${outfit.className} bg-black antialiased`}>
         {children}
         <CookieConsent />
+        <SpeedInsights />
       </body>
     </html>
   );
