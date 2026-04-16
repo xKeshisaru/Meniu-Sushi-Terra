@@ -18,6 +18,8 @@ export const viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: "#000000",
+  appleMobileWebappCapable: "yes",
+  appleMobileWebappStatusBarStyle: "black-translucent",
 };
 
 export default function RootLayout({
@@ -26,8 +28,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ro" className="scroll-smooth dark" suppressHydrationWarning>
-      <body className={`${outfit.className} bg-black antialiased`}>
+    <html
+      lang="ro"
+      className="scroll-smooth dark"
+      style={{ backgroundColor: "black", colorScheme: "dark" }}
+      suppressHydrationWarning
+    >
+      <body
+        className={`${outfit.className} bg-black antialiased`}
+        style={{ backgroundColor: "black" }}
+      >
         {children}
         <CookieConsent />
       </body>
