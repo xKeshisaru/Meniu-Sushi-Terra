@@ -33,6 +33,8 @@ import {
   X,
   GripVertical,
   Star,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import {
   DndContext,
@@ -298,6 +300,9 @@ export default function AdminDashboard() {
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalType, setModalType] = useState<
+    "product" | "header" | "subheader"
+  >("product");
   const [selectedProduct, setSelectedProduct] = useState<
     AdminProduct | undefined
   >(undefined);
@@ -589,6 +594,46 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleReorderProduct = async (
+    catId: string,
+    productId: string,
+    direction: "up" | "down",
+  ) => {
+    const cat = categories.find((c) => c.id === catId);
+    if (!cat) return;
+
+    const items = [...cat.items].sort(
+      (a, b) => (a.index ?? 0) - (b.index ?? 0),
+    );
+    const currentIndex = items.findIndex((p) => p.id === productId);
+    if (currentIndex === -1) return;
+
+    const targetIndex =
+      direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= items.length) return;
+
+    const currentProd = items[currentIndex];
+    const targetProd = items[targetIndex];
+
+    try {
+      const batch = writeBatch(db);
+      const currentRef = doc(db, "categories", catId, "products", currentProd.id);
+      const targetRef = doc(db, "categories", catId, "products", targetProd.id);
+
+      // Swap indices
+      // Ensure we have valid numbers
+      const currentIdx = currentProd.index ?? currentIndex;
+      const targetIdx = targetProd.index ?? targetIndex;
+
+      batch.update(currentRef, { index: targetIdx });
+      batch.update(targetRef, { index: currentIdx });
+
+      await batch.commit();
+    } catch (error) {
+      console.error("Error reordering products:", error);
+    }
+  };
+
   const handleLogout = async () => {
     await signOut(auth);
     router.push("/admin/login");
@@ -730,17 +775,27 @@ export default function AdminDashboard() {
       } else {
         alert("Toate produsele sunt deja optimizate.");
       }
-    } catch (e) {
-      console.error(e);
-      alert("Eroare la optimizare.");
+    } catch (error) {
+      console.error("Error cleaning data:", error);
     } finally {
       setMigrating(false);
     }
   };
 
-  // Modal Handlers
+  const openCreateModal = (
+    type: "product" | "header" | "subheader" = "product",
+  ) => {
+    if (activeTab === "all") {
+      alert("Te rog selectează o categorie pentru a adăuga.");
+      return;
+    }
+    setSelectedProduct(undefined);
+    setModalType(type);
+    setSelectedCategoryId(activeTab);
+    setIsModalOpen(true);
+  };
+
   const openEditModal = (product: AdminProduct) => {
-    // Find category for this product if in "all" mode
     let catId = activeTab;
     if (activeTab === "all") {
       const foundCat = categories.find((c) =>
@@ -749,26 +804,18 @@ export default function AdminDashboard() {
       if (foundCat) catId = foundCat.id;
     }
 
-    setSelectedCategoryId(catId);
     setSelectedProduct(product);
-    setIsModalOpen(true);
-  };
-
-  const openCreateModal = () => {
-    if (activeTab === "all") {
-      alert(
-        "Te rog selectează o categorie specifică pentru a adăuga un produs.",
-      );
-      return;
-    }
-    setSelectedCategoryId(activeTab);
-    setSelectedProduct(undefined); // Empty for create
+    setModalType(
+      product.isHeader ? "header" : product.isSubHeader ? "subheader" : "product",
+    );
+    setSelectedCategoryId(catId);
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedProduct(undefined);
+    setModalType("product");
   };
 
   // Category Modal Handlers
@@ -803,30 +850,15 @@ export default function AdminDashboard() {
 
           <div className="flex items-center gap-3 self-end md:self-auto">
             <button
-              onClick={handleMigration}
-              disabled={migrating}
-              className="flex items-center gap-2 px-3 py-2 text-zinc-600 dark:text-zinc-300 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors border border-zinc-200 dark:border-zinc-800"
-            >
-              <RefreshCw
-                className={`w-4 h-4 ${migrating ? "animate-spin" : ""}`}
-              />
-              <span className="text-sm font-medium">Resetează Meniu</span>
-            </button>
-            <button
               onClick={() => setIsRestoreModalOpen(true)}
               className="flex items-center gap-2 px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all border border-red-100 dark:border-red-900/30 group shadow-sm shadow-red-500/5"
             >
               <RefreshCw className="w-4 h-4 group-hover:rotate-180 duration-500 transition-transform" />
-              <span className="text-sm font-bold">Restaurare Categorii</span>
+              <span className="text-sm rounded-lg font-bold">
+                Restaurare Categorii
+              </span>
             </button>
-            <button
-              onClick={handleCleanData}
-              title="Optimizează Date (Extrage Gramaje)"
-              disabled={migrating}
-              className="p-2 text-zinc-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-            >
-              <RefreshCw className="w-5 h-5" />
-            </button>
+
             <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-800" />
             <button
               onClick={handleLogout}
@@ -857,7 +889,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* View Toggles & Add Button */}
-          <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 no-scrollbar">
             <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-lg border border-zinc-200 dark:border-zinc-700">
               <button
                 onClick={() => setViewMode("grid")}
@@ -883,9 +915,29 @@ export default function AdminDashboard() {
               </button>
             </div>
 
+            <div className="h-8 w-px bg-zinc-200 dark:bg-zinc-800 hidden md:block mx-1" />
+
             <button
-              onClick={openCreateModal}
-              className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-red-500/20 active:scale-95 transition-all"
+              onClick={() => openCreateModal("header")}
+              title="Adaugă un titlu de secțiune (ex: BĂUTURI RĂCORITOARE)"
+              className="flex items-center justify-center gap-2 px-3 py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-xl font-bold transition-all text-sm whitespace-nowrap"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Titlu</span>
+            </button>
+
+            <button
+              onClick={() => openCreateModal("subheader")}
+              title="Adaugă un sub-titlu de secțiune (ex: Vinuri la pahar)"
+              className="flex items-center justify-center gap-2 px-3 py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-xl font-bold transition-all text-sm whitespace-nowrap"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Sub-titlu</span>
+            </button>
+
+            <button
+              onClick={() => openCreateModal("product")}
+              className="flex items-center justify-center gap-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-2 rounded-xl font-bold shadow-lg shadow-red-500/20 active:scale-95 transition-all whitespace-nowrap"
             >
               <Plus className="w-5 h-5" />
               <span>Produs Nou</span>
@@ -1022,36 +1074,18 @@ export default function AdminDashboard() {
 
                       if (hasNoHeaders && filteredProducts.length > 0) {
                         return (
-                          <div className="col-span-full bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-3xl p-8 text-center flex flex-col items-center gap-4 mb-6">
-                            <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                              <HelpCircle className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                          <div className="col-span-full bg-zinc-50 dark:bg-zinc-800/20 border border-zinc-100 dark:border-zinc-800 rounded-3xl p-12 text-center flex flex-col items-center gap-4">
+                            <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center">
+                              <HelpCircle className="w-8 h-8 text-zinc-400" />
                             </div>
                             <div className="max-w-md">
                               <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
-                                Organizează băuturile pe secțiuni
+                                Sfat pentru organizare
                               </h3>
-                              <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
-                                În acest moment băuturile sunt listate toate la
-                                un loc. Vrei să le ordonăm automat pe categorii
-                                (Long Drinks, Cocktails, Vin etc.) la fel ca în
-                                meniul principal?
+                              <p className="text-sm text-zinc-500 mt-1">
+                                Folosește butoanele de <b>Titlu</b> și <b>Sub-titlu</b> de sus pentru a grupa băuturile pe secțiuni (ex: Vinuri, Cocktails).
                               </p>
                             </div>
-                            <button
-                              onClick={handleMigration}
-                              disabled={migrating}
-                              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2"
-                            >
-                              <RefreshCw
-                                className={cn(
-                                  "w-4 h-4",
-                                  migrating && "animate-spin",
-                                )}
-                              />
-                              {migrating
-                                ? "Se organizează..."
-                                : "Sincronizează Categorii"}
-                            </button>
                           </div>
                         );
                       }
@@ -1131,20 +1165,36 @@ export default function AdminDashboard() {
                                         <span className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]"></span>
                                         {item.name}
                                       </h4>
-                                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity relative">
-                                        <button
-                                          onClick={() =>
-                                            setMovingProductId(
-                                              movingProductId === item.id
-                                                ? null
-                                                : item.id,
-                                            )
-                                          }
-                                          className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-900 rounded-md transition-colors border border-transparent hover:border-zinc-200"
-                                          title="Mută"
-                                        >
-                                          <ArrowRightLeft className="w-3 h-3" />
-                                        </button>
+                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity relative">
+                                          <button
+                                            onClick={() =>
+                                              setMovingProductId(
+                                                movingProductId === item.id
+                                                  ? null
+                                                  : item.id,
+                                              )
+                                            }
+                                            className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-900 rounded-md transition-colors border border-transparent hover:border-zinc-200"
+                                            title="Mută"
+                                          >
+                                            <ArrowRightLeft className="w-3 h-3" />
+                                          </button>
+                                        <div className="flex flex-col gap-0.5">
+                                          <button
+                                            onClick={() => handleReorderProduct("bauturi", item.id, "up")}
+                                            className="p-0.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-900 rounded-sm transition-colors border border-transparent"
+                                            title="Mută mai sus"
+                                          >
+                                            <ChevronUp className="w-2.5 h-2.5" />
+                                          </button>
+                                          <button
+                                            onClick={() => handleReorderProduct("bauturi", item.id, "down")}
+                                            className="p-0.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-900 rounded-sm transition-colors border border-transparent"
+                                            title="Mută mai jos"
+                                          >
+                                            <ChevronDown className="w-2.5 h-2.5" />
+                                          </button>
+                                        </div>
                                         <button
                                           onClick={() => openEditModal(item)}
                                           className="p-1 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 rounded-md transition-colors border border-transparent hover:border-blue-200"
@@ -1228,6 +1278,22 @@ export default function AdminDashboard() {
                                         >
                                           <ArrowRightLeft className="w-4 h-4" />
                                         </button>
+                                        <div className="flex flex-col gap-1 items-center justify-center">
+                                          <button
+                                            onClick={() => handleReorderProduct("bauturi", item.id, "up")}
+                                            className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-900 rounded-md transition-colors"
+                                            title="Mută mai sus"
+                                          >
+                                            <ChevronUp className="w-3.5 h-3.5" />
+                                          </button>
+                                          <button
+                                            onClick={() => handleReorderProduct("bauturi", item.id, "down")}
+                                            className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-900 rounded-md transition-colors"
+                                            title="Mută mai jos"
+                                          >
+                                            <ChevronDown className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
                                         <button
                                           onClick={() => openEditModal(item)}
                                           className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-zinc-400 hover:text-blue-600 rounded-lg transition-colors border border-transparent hover:border-blue-200"
@@ -1407,6 +1473,28 @@ export default function AdminDashboard() {
                               >
                                 <ArrowRightLeft className="w-4 h-4" />
                               </button>
+                              <div className="flex flex-col gap-1">
+                                <button
+                                  onClick={() => {
+                                    const catId = activeTab === "all" ? findProductCategory(item.id) : activeTab;
+                                    handleReorderProduct(catId, item.id, "up");
+                                  }}
+                                  className="p-1 bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-md transition-colors border border-zinc-100 dark:border-zinc-700"
+                                  title="Mută sus"
+                                >
+                                  <ChevronUp className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const catId = activeTab === "all" ? findProductCategory(item.id) : activeTab;
+                                    handleReorderProduct(catId, item.id, "down");
+                                  }}
+                                  className="p-1 bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-md transition-colors border border-zinc-100 dark:border-zinc-700"
+                                  title="Mută jos"
+                                >
+                                  <ChevronDown className="w-3 h-3" />
+                                </button>
+                              </div>
                               <button
                                 onClick={() => openEditModal(item)}
                                 className="p-2 bg-zinc-50 dark:bg-zinc-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors border border-zinc-100 dark:border-zinc-700 hover:border-blue-200"
@@ -1467,6 +1555,7 @@ export default function AdminDashboard() {
             }
             categoryId={selectedCategoryId}
             onSuccess={() => {}}
+            initialType={modalType}
           />
         )}
 

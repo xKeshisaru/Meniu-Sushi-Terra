@@ -31,6 +31,7 @@ interface AdminProductModalProps {
   product?: Product & { id: string };
   categoryId: string; // Current or Initial Category
   onSuccess: () => void;
+  initialType?: "product" | "header" | "subheader";
 }
 
 import { cn, extractWeight, parseWeight } from "@/lib/utils";
@@ -43,6 +44,7 @@ export function AdminProductModal({
   product,
   categoryId,
   onSuccess,
+  initialType = "product",
 }: AdminProductModalProps) {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -104,8 +106,8 @@ export function AdminProductModal({
           nutrition: "",
           image: "",
           active: true,
-          isHeader: false,
-          isSubHeader: false,
+          isHeader: initialType === "header",
+          isSubHeader: initialType === "subheader",
           index: Date.now(),
           categoryId: categoryId,
         });
@@ -247,10 +249,40 @@ export function AdminProductModal({
         className="bg-white dark:bg-zinc-900 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col border border-zinc-100 dark:border-zinc-800"
       >
         {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center bg-zinc-50/50 dark:bg-zinc-900/50">
-          <h2 className="text-xl font-bold font-serif text-zinc-900 dark:text-zinc-50">
-            {product ? "Editare Produs" : "Adaugă Produs Nou"}
-          </h2>
+        <div
+          className={cn(
+            "px-6 py-4 border-b flex justify-between items-center transition-colors duration-300",
+            formData.isHeader
+              ? "bg-red-500/10 border-red-500/20"
+              : formData.isSubHeader
+                ? "bg-zinc-800 border-zinc-700"
+                : "bg-zinc-50/50 dark:bg-zinc-900/50 border-zinc-100 dark:border-zinc-800",
+          )}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className={cn(
+                "w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.4)]",
+                formData.isHeader
+                  ? "bg-red-500 shadow-red-500/60"
+                  : formData.isSubHeader
+                    ? "bg-zinc-400 shadow-zinc-400/60"
+                    : "bg-green-500 shadow-green-500/60",
+              )}
+            />
+            <h2 className="text-xl font-bold font-serif text-zinc-900 dark:text-zinc-50">
+              {product
+                ? "Editare"
+                : formData.isHeader
+                  ? "Titlu Nou"
+                  : formData.isSubHeader
+                    ? "Sub-titlu Nou"
+                    : "Produs Nou"}{" "}
+              {formData.isHeader || formData.isSubHeader
+                ? "Secțiune"
+                : `(${product ? "Produs" : "Nou"})`}
+            </h2>
+          </div>
           <button
             onClick={onClose}
             className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full transition-colors"
@@ -338,10 +370,10 @@ export function AdminProductModal({
               <div className="flex-1 flex items-center justify-between p-2 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800">
                 <div className="px-2">
                   <span className="block font-bold text-zinc-900 dark:text-zinc-100 text-sm">
-                    Status
+                    Statusul Vizibilității
                   </span>
                   <span className="text-[10px] text-zinc-500">
-                    {formData.active ? "Vizibil" : "Ascuns"}
+                    {formData.active ? "Activ în meniu" : "Ascuns acum"}
                   </span>
                 </div>
                 <button
@@ -361,6 +393,34 @@ export function AdminProductModal({
                 </button>
               </div>
             </div>
+
+            {(formData.isHeader || formData.isSubHeader) && (
+              <div
+                className={cn(
+                  "p-4 rounded-2xl border animate-in fade-in slide-in-from-top-2 duration-300",
+                  formData.isHeader
+                    ? "bg-red-500/5 border-red-500/10"
+                    : "bg-zinc-800/20 border-zinc-700",
+                )}
+              >
+                <div className="flex gap-3 items-start">
+                  <div className="p-2 bg-white/10 rounded-lg">
+                    <Save className="w-5 h-5 text-red-500" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-zinc-900 dark:text-zinc-50">
+                      Creezi un {formData.isHeader ? "TITLU" : "SUB-TITLU"} de
+                      secțiune
+                    </h4>
+                    <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
+                      Acesta va apărea ca un separator elegant între produsele
+                      din meniu. Perfect pentru a grupa băuturile (ex: Vinuri,
+                      Beri) sau felurile de mâncare.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Conditional Fields: only for non-headers */}
             {!formData.isHeader && !formData.isSubHeader && (
