@@ -55,6 +55,8 @@ import Image from "next/image";
 import { Product, Category } from "@/types";
 import { AdminProductModal } from "@/components/admin/AdminProductModal";
 import { AdminCategoryModal } from "@/components/admin/AdminCategoryModal";
+import { DeleteConfirmationModal } from "@/components/admin/DeleteConfirmationModal";
+import { RestoreCategoriesModal } from "@/components/admin/RestoreCategoriesModal";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -231,6 +233,29 @@ export default function AdminDashboard() {
   const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
+  // Recovery features
+  const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
+  const [restoringCategoryId, setRestoringCategoryId] = useState<string | null>(
+    null,
+  );
+
+  // Delete Confirmation State
+  const [deleteConfig, setDeleteConfig] = useState<{
+    isOpen: boolean;
+    type: "category" | "product";
+    title: string;
+    message: string;
+    itemName: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    type: "category",
+    title: "",
+    message: "",
+    itemName: "",
+    onConfirm: () => {},
+  });
+
   // DnD sensors
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -385,13 +410,25 @@ export default function AdminDashboard() {
     return cat ? cat.id : "";
   };
 
-  const deleteProduct = async (catId: string, prodId: string) => {
-    if (!confirm("Ștergi acest produs?")) return;
-    try {
-      await deleteDoc(doc(db, "categories", catId, "products", prodId));
-    } catch (e) {
-      alert("Eroare la ștergere");
-    }
+  const deleteProduct = (catId: string, prodId: string) => {
+    const product = categories
+      .find((c) => c.id === catId)
+      ?.items.find((p) => p.id === prodId);
+
+    setDeleteConfig({
+      isOpen: true,
+      type: "product",
+      title: "Șterge Produs",
+      message: "Sigur vrei să elimini acest produs?",
+      itemName: product?.name || "Produs",
+      onConfirm: async () => {
+        try {
+          await deleteDoc(doc(db, "categories", catId, "products", prodId));
+        } catch (e) {
+          alert("Eroare la ștergere");
+        }
+      },
+    });
   };
 
   const toggleFeatured = async (
@@ -407,6 +444,47 @@ export default function AdminDashboard() {
     } catch (e) {
       console.error("Error toggling featured:", e);
       alert("Eroare la actualizare");
+    }
+  };
+
+  const handleRestoreCategory = async (catId: string) => {
+    setRestoringCategoryId(catId);
+    try {
+      const backupData = menuData.find((c) => c.id === catId);
+      if (!backupData)
+        throw new Error(`Nu am găsit datele pentru '${catId}' în backup.`);
+
+      const batch = writeBatch(db);
+
+      // 1. Create category doc
+      const catRef = doc(db, "categories", catId);
+      batch.set(catRef, {
+        id: catId,
+        title: backupData.title,
+        icon: backupData.icon,
+        index: backupData.index,
+        image: backupData.image || "",
+      });
+
+      // 2. Create products
+      backupData.items.forEach((item, idx) => {
+        const itemId = item.name.toLowerCase().replace(/\s+/g, "-");
+        const prodRef = doc(db, "categories", catId, "products", itemId);
+        batch.set(prodRef, {
+          ...item,
+          id: itemId,
+          index: item.index ?? idx,
+          active: true,
+        });
+      });
+
+      await batch.commit();
+      setActiveTab(catId);
+    } catch (error) {
+      console.error("Error restoring category:", error);
+      alert("Eroare la restaurare. Verifică consola.");
+    } finally {
+      setRestoringCategoryId(null);
     }
   };
 
@@ -448,30 +526,34 @@ export default function AdminDashboard() {
     }
   };
 
-  const deleteCategory = async (catId: string) => {
-    if (
-      !confirm(
-        "Ești sigur că vrei să ștergi această categorie și toate produsele ei?",
-      )
-    )
-      return;
-    try {
-      // Delete all items first (best effort)
-      // Ideally rely on cloud function for recursive delete, but client side for now:
-      const cat = categories.find((c) => c.id === catId);
-      if (cat) {
-        const batch = writeBatch(db);
-        cat.items.forEach((item) => {
-          const itemRef = doc(db, "categories", catId, "products", item.id);
-          batch.delete(itemRef);
-        });
-        await batch.commit();
-      }
-      await deleteDoc(doc(db, "categories", catId));
-    } catch (error) {
-      console.error("Error deleting category:", error);
-      alert("Eroare la ștergerea categoriei.");
-    }
+  const deleteCategory = (catId: string) => {
+    const category = categories.find((c) => c.id === catId);
+
+    setDeleteConfig({
+      isOpen: true,
+      type: "category",
+      title: "Șterge Categorie",
+      message:
+        "Ești sigur că vrei să ștergi această categorie și toate produsele ei? Această acțiune este permanentă.",
+      itemName: category?.title || "Categorie",
+      onConfirm: async () => {
+        try {
+          const cat = categories.find((c) => c.id === catId);
+          if (cat) {
+            const batch = writeBatch(db);
+            cat.items.forEach((item) => {
+              const itemRef = doc(db, "categories", catId, "products", item.id);
+              batch.delete(itemRef);
+            });
+            await batch.commit();
+          }
+          await deleteDoc(doc(db, "categories", catId));
+        } catch (error) {
+          console.error("Error deleting category:", error);
+          alert("Eroare la ștergerea categoriei.");
+        }
+      },
+    });
   };
 
   const handleReorderCategory = async (
@@ -729,6 +811,13 @@ export default function AdminDashboard() {
                 className={`w-4 h-4 ${migrating ? "animate-spin" : ""}`}
               />
               <span className="text-sm font-medium">Resetează Meniu</span>
+            </button>
+            <button
+              onClick={() => setIsRestoreModalOpen(true)}
+              className="flex items-center gap-2 px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all border border-red-100 dark:border-red-900/30 group shadow-sm shadow-red-500/5"
+            >
+              <RefreshCw className="w-4 h-4 group-hover:rotate-180 duration-500 transition-transform" />
+              <span className="text-sm font-bold">Restaurare Categorii</span>
             </button>
             <button
               onClick={handleCleanData}
@@ -1389,6 +1478,23 @@ export default function AdminDashboard() {
             onSuccess={() => {}}
           />
         )}
+
+        <DeleteConfirmationModal
+          isOpen={deleteConfig.isOpen}
+          onClose={() => setDeleteConfig((prev) => ({ ...prev, isOpen: false }))}
+          onConfirm={deleteConfig.onConfirm}
+          title={deleteConfig.title}
+          message={deleteConfig.message}
+          itemName={deleteConfig.itemName}
+        />
+        <RestoreCategoriesModal
+          isOpen={isRestoreModalOpen}
+          onClose={() => setIsRestoreModalOpen(false)}
+          menuData={menuData}
+          liveCategories={categories}
+          onRestore={handleRestoreCategory}
+          isRestoring={restoringCategoryId}
+        />
       </AnimatePresence>
     </div>
   );
