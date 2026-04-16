@@ -66,6 +66,9 @@ export function AdminProductModal({
     categoryId: categoryId,
   });
 
+  const [sections, setSections] = useState<(Product & { id: string })[]>([]);
+  const [targetSectionId, setTargetSectionId] = useState<string>("");
+
   // Fetch Categories for Dropdown
   useEffect(() => {
     const fetchCategories = async () => {
@@ -80,6 +83,7 @@ export function AdminProductModal({
   // Reset form when modal opens/closes or product changes
   useEffect(() => {
     if (isOpen) {
+      setTargetSectionId(""); // Reset section choice
       if (product) {
         const rawWeight = product.weight || extractWeight(product.desc) || "";
 
@@ -114,6 +118,38 @@ export function AdminProductModal({
       }
     }
   }, [isOpen, product, categoryId]);
+
+  // Fetch Sections (Headers/SubHeaders) for the selected category
+  useEffect(() => {
+    const fetchSections = async () => {
+      if (!formData.categoryId) {
+        setSections([]);
+        return;
+      }
+      try {
+        const q = query(
+          collection(db, "categories", formData.categoryId, "products"),
+          orderBy("index", "asc"),
+        );
+        const snapshot = await getDocs(q);
+        const prodSections = snapshot.docs
+          .map(
+            (doc) =>
+              ({ ...doc.data(), id: doc.id }) as Product & { id: string },
+          )
+          .filter((p) => p.isHeader || p.isSubHeader);
+        setSections(prodSections);
+      } catch (error) {
+        console.error("Error fetching sections:", error);
+      }
+    };
+
+    if (isOpen && !product && !formData.isHeader && !formData.isSubHeader) {
+      fetchSections();
+    } else {
+      setSections([]);
+    }
+  }, [isOpen, formData.categoryId, product, formData.isHeader, formData.isSubHeader]);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -202,6 +238,15 @@ export function AdminProductModal({
         productId,
       );
 
+      // Find section index if targeted
+      let finalIndex = formData.index;
+      if (!product && targetSectionId) {
+        const section = sections.find((s) => s.id === targetSectionId);
+        if (section) {
+          finalIndex = (section.index || 0) + 0.001;
+        }
+      }
+
       const productData = {
         name: formData.name,
         desc: formData.desc
@@ -218,7 +263,7 @@ export function AdminProductModal({
         active: formData.active,
         isHeader: formData.isHeader || false,
         isSubHeader: formData.isSubHeader || false,
-        index: formData.index,
+        index: finalIndex,
         id: productId,
       };
 
@@ -313,6 +358,30 @@ export function AdminProductModal({
                   ))}
                 </select>
               </div>
+
+              {/* Position in Section Selector */}
+              {!product &&
+                !formData.isHeader &&
+                !formData.isSubHeader &&
+                sections.length > 0 && (
+                  <div className="flex-1 space-y-1 animate-in fade-in slide-in-from-left-2 duration-300">
+                    <label className="block text-sm font-bold text-red-600 dark:text-red-400">
+                      Poziționează în secțiunea (Opțional)
+                    </label>
+                    <select
+                      value={targetSectionId}
+                      onChange={(e) => setTargetSectionId(e.target.value)}
+                      className="w-full px-4 py-2 rounded-xl bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium"
+                    >
+                      <option value="">Ultimul în listă</option>
+                      {sections.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.isHeader ? "TITLU: " : "Sub: "} {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
               {/* Header Toggles */}
               <div className="flex-1 flex items-center justify-between p-2 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800">
