@@ -1035,7 +1035,7 @@ export default function AdminDashboard() {
                     </p>
                     {activeTab !== "all" && (
                       <button
-                        onClick={openCreateModal}
+                        onClick={() => openCreateModal()}
                         className="mt-6 inline-flex items-center gap-2 text-red-600 dark:text-red-400 font-bold hover:underline"
                       >
                         <Plus className="w-4 h-4" />
