@@ -1292,13 +1292,13 @@ export default function AdminDashboard() {
                                           <MoveDropdown
                                             item={item}
                                             categories={categories}
-                                            currentCatId={activeTab === "all" ? findProductCategory(item.id) : activeTab}
+                                            currentCatId="bauturi"
                                             onMove={handleMoveProduct}
                                             isMoving={isMoving}
                                             onClose={() =>
                                               setMovingProductId(null)
                                             }
-                                            catItems={categories.find(c => c.id === (activeTab === "all" ? findProductCategory(item.id) : activeTab))?.items}
+                                            catItems={categories.find(c => c.id === "bauturi")?.items}
                                             onMoveToSection={handleMoveToSection}
                                           />
                                         )}
@@ -1399,6 +1399,8 @@ export default function AdminDashboard() {
                                             onClose={() =>
                                               setMovingProductId(null)
                                             }
+                                            catItems={categories.find(c => c.id === "bauturi")?.items}
+                                            onMoveToSection={handleMoveToSection}
                                           />
                                         )}
                                       </div>
