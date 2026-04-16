@@ -180,6 +180,8 @@ const MoveDropdown = ({
   onMove,
   isMoving,
   onClose,
+  catItems,
+  onMoveToSection,
 }: {
   item: AdminProduct;
   categories: Category[];
@@ -187,11 +189,17 @@ const MoveDropdown = ({
   onMove: (p: AdminProduct, from: string, to: string) => void;
   isMoving: boolean;
   onClose: () => void;
+  catItems?: AdminProduct[];
+  onMoveToSection?: (productId: string, sectionId: string) => void;
 }) => {
+  const sections = catItems?.filter(
+    (p) => (p.isHeader || p.isSubHeader) && p.id !== item.id
+  ).sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+
   return (
-    <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-100 dark:border-zinc-800 z-[100] overflow-hidden py-2 animate-in fade-in zoom-in duration-200 origin-top-right">
+    <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-100 dark:border-zinc-800 z-[100] overflow-hidden py-2 animate-in fade-in zoom-in duration-200 origin-top-right">
       <div className="px-4 py-2 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest border-b border-zinc-50 dark:border-zinc-800/50 mb-1 flex justify-between items-center">
-        <span>Mută în categoria...</span>
+        <span>Opțiuni Mutare</span>
         <button
           onClick={onClose}
           className="hover:text-zinc-900 dark:hover:text-zinc-100"
@@ -199,7 +207,35 @@ const MoveDropdown = ({
           <X className="w-3 h-3" />
         </button>
       </div>
-      <div className="max-h-64 overflow-y-auto custom-scrollbar">
+      
+      <div className="max-h-80 overflow-y-auto custom-scrollbar">
+        {/* Sections Listing */}
+        {sections && sections.length > 0 && (
+          <div className="mb-2">
+            <div className="px-4 py-1.5 text-[9px] font-bold text-zinc-400 uppercase tracking-tighter bg-zinc-50/50 dark:bg-zinc-800/30">
+              Mută în Secțiune (Intern)
+            </div>
+            {sections.map((section) => (
+              <button
+                key={section.id}
+                onClick={() => onMoveToSection?.(item.id, section.id)}
+                disabled={isMoving}
+                className="w-full px-4 py-2 text-left text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors flex items-center gap-2 group/sec"
+              >
+                <div className={cn(
+                  "w-2 h-2 rounded-full",
+                  section.isHeader ? "bg-red-500" : "bg-zinc-400"
+                )} />
+                <span className="truncate">{section.name}</span>
+              </button>
+            ))}
+            <div className="h-px bg-zinc-100 dark:bg-zinc-800 my-2 mx-2" />
+          </div>
+        )}
+
+        <div className="px-4 py-1.5 text-[9px] font-bold text-zinc-400 uppercase tracking-tighter bg-zinc-50/50 dark:bg-zinc-800/30 mb-1">
+          Mută în altă Categorie
+        </div>
         {categories.map((cat) => (
           <button
             key={cat.id}
@@ -631,6 +667,45 @@ export default function AdminDashboard() {
       await batch.commit();
     } catch (error) {
       console.error("Error reordering products:", error);
+    }
+  };
+
+  const handleMoveToSection = async (productId: string, sectionId: string) => {
+    if (activeTab === "all") return;
+    const cat = categories.find((c) => c.id === activeTab);
+    if (!cat) return;
+
+    const items = [...cat.items].sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+    const sectionIndex = items.findIndex((p) => p.id === sectionId);
+    
+    if (sectionIndex === -1) return;
+
+    setIsMoving(true);
+    try {
+      const productRef = doc(db, "categories", activeTab, "products", productId);
+      const targetHeader = items[sectionIndex];
+      
+      // We set index to targetHeader.index + small offset to put it right after the header
+      // But to be safer, we can just use targetHeader.index + 1 and ensure it's higher than the header
+      // but lower than the next item.
+      // Firestore handles decimal indices!
+      const nextItem = items[sectionIndex + 1];
+      let newIndex;
+      if (nextItem) {
+        newIndex = (targetHeader.index! + nextItem.index!) / 2;
+      } else {
+        newIndex = targetHeader.index! + 1000;
+      }
+
+      const { updateDoc } = await import("firebase/firestore");
+      await updateDoc(productRef, { index: newIndex });
+      
+      setMovingProductId(null);
+    } catch (error) {
+      console.error("Error moving to section:", error);
+      alert("Eroare la mutarea în secțiune.");
+    } finally {
+      setIsMoving(false);
     }
   };
 
@@ -1142,6 +1217,8 @@ export default function AdminDashboard() {
                                     onMove={handleMoveProduct}
                                     isMoving={isMoving}
                                     onClose={() => setMovingProductId(null)}
+                                    catItems={categories.find(c => c.id === 'bauturi')?.items}
+                                    onMoveToSection={handleMoveToSection}
                                   />
                                 )}
                               </div>
@@ -1215,12 +1292,14 @@ export default function AdminDashboard() {
                                           <MoveDropdown
                                             item={item}
                                             categories={categories}
-                                            currentCatId="bauturi"
+                                            currentCatId={activeTab === "all" ? findProductCategory(item.id) : activeTab}
                                             onMove={handleMoveProduct}
                                             isMoving={isMoving}
                                             onClose={() =>
                                               setMovingProductId(null)
                                             }
+                                            catItems={categories.find(c => c.id === (activeTab === "all" ? findProductCategory(item.id) : activeTab))?.items}
+                                            onMoveToSection={handleMoveToSection}
                                           />
                                         )}
                                       </div>
@@ -1520,14 +1599,12 @@ export default function AdminDashboard() {
                                 <MoveDropdown
                                   item={item}
                                   categories={categories}
-                                  currentCatId={
-                                    activeTab === "all"
-                                      ? findProductCategory(item.id)
-                                      : activeTab
-                                  }
+                                  currentCatId={activeTab === "all" ? findProductCategory(item.id) : activeTab}
                                   onMove={handleMoveProduct}
                                   isMoving={isMoving}
                                   onClose={() => setMovingProductId(null)}
+                                  catItems={categories.find(c => c.id === (activeTab === "all" ? findProductCategory(item.id) : activeTab))?.items}
+                                  onMoveToSection={handleMoveToSection}
                                 />
                               )}
                             </div>
